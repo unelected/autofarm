@@ -250,11 +250,12 @@ class Farm:
 
     async def shuher(self, user_id: str = "user_57e6cce718056") -> Optional[
         bool]:
-        result = await self.mafia_main.get_user(user_id)
-        profile = result[PacketDataKeys.USER]
-        if profile[PacketDataKeys.IS_ONLINE] == "true":
-            return profile[PacketDataKeys.SERVER_LANGUAGE]
-        return None
+        if self.mafia_main:
+            result = await self.mafia_main.get_user(user_id)
+            profile = result[PacketDataKeys.USER_PROFILE][PacketDataKeys.PROFILE_USER_DATA]
+            if profile[PacketDataKeys.IS_ONLINE] == "true":
+                return profile[PacketDataKeys.SERVER_LANGUAGE]
+            return None
 
     def conn_players(self) -> List[Player]:
         return list(filter(lambda x: not x.disconn and x.alive, self.players))
@@ -263,7 +264,7 @@ class Farm:
     def disconn_players(self) -> List[Player]:
         return list(filter(lambda x: x.disconn and x.alive, self.players))
 
-    def get_listener(self, current_listener: Client = None) -> None:
+    def get_listener(self, current_listener: Client | None = None) -> Client | None:
         listeners = self.get_who_mafia
         if self.is_killing_mafia:
             listeners = self.get_who_civs
@@ -271,10 +272,12 @@ class Farm:
             listeners = list(filter(
                 lambda x: x.client.user_id != current_listener.user_id,
                 listeners))
-        return random.choice(list(
-            filter(lambda x: not x.disconn, listeners))).client
+        data = list(
+            filter(lambda x: not x.disconn, listeners))
 
-    def get_host(self) -> Client:
+        return random.choice(data).client
+
+    def get_host(self) -> Client | None:
         return self.mafia_main if not HOST else (
             list(filter(lambda x: x.email == HOST, self.players))[0].client)
 
@@ -336,15 +339,18 @@ class Farm:
                     # RatingType.WINS)["rul"]
                     # self.mafia_main.select_language("en")
                     await asyncio.sleep(.2)
-                    room = await self.get_host().create_room(ENABLED_ROLES,
-                                                             TITLE,
-                                                             max_players=
-                                                             MAX_PLAYERS,
-                                                             password=
-                                                             PASSWORD,
-                                                             min_level=
-                                                             MIN_LEVEL,
-                                                   vip_enabled = VIP_ENABLED)
+                    data = self.get_host()
+                    if data is None:
+                        raise AttributeError("нет хоста для создания комнаты")
+                    room = await data.create_room(ENABLED_ROLES,
+                                                            TITLE,
+                                                            max_players=
+                                                            MAX_PLAYERS,
+                                                            password=
+                                                            PASSWORD,
+                                                            min_level=
+                                                            MIN_LEVEL,
+                                                vip_enabled = VIP_ENABLED)
                     break
                 except Exception as e:
                     logging.info(f"произошла ошибочка, {e}")
@@ -413,7 +419,7 @@ class Farm:
                         logging.info(f"Убиваем: "
                         f"{'МАФОВ' if self.is_killing_mafia else 'МИРОВ'}")
 
-                    elif ((ROLE and self.self_role not in ROLE) or
+                    elif ((ROLE and self.self_role != ROLE) or
                           (not ROLE and FORCE and MODE != 3 and (
                             (self.self_role in CIVILIANS and not
                             self.is_killing_mafia) or
