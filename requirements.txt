@@ -1,2 +1,2 @@
-pyfiglet
-zafiaonline
+pyfiglet~=1.0.2
+zafiaonline>=7.0.0

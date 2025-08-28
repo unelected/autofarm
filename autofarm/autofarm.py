@@ -1,3 +1,24 @@
+# Project: autofarm
+# License: GNU Affero General Public License v3.0 only
+#
+# This file is part of the autofarm project.
+#
+# Copyright (C) 2025 unelected
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free Software
+# Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# See the LICENSE file in the root of this repository for the full license text.
+
 import asyncio
 import sys
 import os
@@ -42,6 +63,9 @@ class Farm:
             "stoppers": 0,
         }
 
+
+        
+    # Farm
     async def start(self):
         callbacks = await self.prepare_start_farm()
         await self.farm_action(callbacks)
@@ -58,6 +82,8 @@ class Farm:
             await self.start_playing(callbacks, cautions, day_gs, days,
                                      number_of_games, room_time, stoppers)
 
+
+    # Playing
     async def prepare_playing(self, callbacks):
         cautions, number_of_games, room_time, stoppers = \
             await self.prepare_data()
@@ -89,6 +115,7 @@ class Farm:
                 pass
 
 
+    # Farm
     async def prepare_start_farm(self):
         logging.info(f'скрипт перезапустился. режим: {MODE}. аккаунт -'
                      f' {MAIN_ACCOUNT_DATA[0]}')
@@ -98,11 +125,14 @@ class Farm:
         if VIP_ENABLED:
             await self.buy_vip_for_farm()
         return callbacks
-
+    
+    # Prapering
     async def check_cautiously_and_prepare_players(self, callbacks):
         if await self.prepare_players(callbacks) == "cautiously":
             callbacks.get("cautiously", lambda: None)()
 
+
+    # Data
     async def get_data_action(self, callbacks):
         data = await self.get_data_handle(callbacks)
         if data is not None:
@@ -113,7 +143,7 @@ class Farm:
         try:
             if not self.listener_account:
                 raise AttributeError("No listener acccount")
-            data = await self.listener_account.listen()
+            data = await self.listener_account.auth.listen()
         except TimeoutError:
             await self.stop_farm_action(callbacks)
             return None
@@ -133,10 +163,14 @@ class Farm:
         logging.info(f"неизвестная ошибка: {e}", exc_info=True)
         await self.stop_farm_action(callbacks)
 
+
+    # Farm
     async def stop_farm_action(self, callbacks):
         await self.remove_accounts_from_server()
         callbacks.get("stopper", lambda: None)()
 
+
+    # Preparing
     async def prepare_game_data(self):
         self.played = True
         self.listener_account = self.mafia_main
@@ -151,27 +185,29 @@ class Farm:
         stoppers = self.state["stoppers"]
         return cautions, number_of_games, room_time, stoppers
 
+
+    # VIP
     async def buy_vip_for_farm(self):
         await self.get_players_who_can_buy_vip()
         await self.players_buy_vip()
 
     async def players_buy_vip(self):
         for player in self.players:
-            if (player.client.user.is_vip == 0 and
-                    player.client.user.authority >= 20000):
+            if (player.client.auth.user.is_vip == 0 and
+                    player.client.auth.user.authority >= 20000):
                 await self.buy_vip_action(player)
 
     async def get_players_who_can_buy_vip(self):
         for player in self.players:
-            if (player.client.user.is_vip == 0 and
-                    player.client.user.authority <
+            if (player.client.auth.user.is_vip == 0 and
+                    player.client.auth.user.authority <
                     20000):
                 await self.users_is_have_no_vip_action()
 
     @staticmethod
     async def buy_vip_action(player):
-        await player.client.buy_vip()
-        logging.info(f"куплен вип у {player.client.user.username}")
+        await player.client.user.buy_vip()
+        logging.info(f"куплен вип у {player.client.auth.user.username}")
         await asyncio.sleep(1)
 
     @staticmethod
@@ -180,6 +216,8 @@ class Farm:
                      "не у всех есть возможность приобрести вип")
         sys.exit()
 
+
+    # Callbacks
     def create_callbacks(self):
         def add_game():
             self.state["number_of_games"] += 1
@@ -201,6 +239,7 @@ class Farm:
             "break_loop": break_loop,
         }
 
+    # PlayerData
     async def check_games(self):
         """Проверяет лимиты игр как для всех, так и для отдельных игроков."""
         await self.check_total_games()
@@ -209,7 +248,7 @@ class Farm:
     async def check_total_games(self):
         """Проверяет, достигнут ли общий лимит игр."""
         if MAX_GAMES and self.mafia_main:
-            games = self.mafia_main.user.played_games + 1
+            games = self.mafia_main.auth.user.played_games + 1
             message = "Игры равны нужному количеству, фарм завершен."
             await self.check_games_limit(games, MAX_GAMES, message)
 
@@ -217,9 +256,9 @@ class Farm:
         """Проверяет, достигнут ли лимит игр для каждого игрока."""
         if MAX_ACCOUNTS_GAMES:
             for player in self.players:
-                games = player.client.user.played_games + 1
+                games = player.client.auth.user.played_games + 1
                 message = (
-                    f"У {player.client.user.username} игры равны нужному "
+                    f"У {player.client.auth.user.username} игры равны нужному "
                     f"количеству, фарм завершен.")
                 await self.check_games_limit(games, MAX_ACCOUNTS_GAMES, 
                                              message)
@@ -244,17 +283,17 @@ class Farm:
     
     async def get_wins(self):
         if MODE == 1 and self.mafia_main:
-            return self.mafia_main.user.wins_as_mafia + 1
+            return self.mafia_main.auth.user.wins_as_mafia + 1
         elif MODE == 2 and self.mafia_main:
-            return self.mafia_main.user.wins_as_peaceful + 1
+            return self.mafia_main.auth.user.wins_as_peaceful + 1
         return None
 
     async def get_wins_with_attributes(self):
         if MAX_WINS_MODE and MODE not in {1, 2}:
             if MAX_WINS_MODE == "mafia" and self.mafia_main:
-                return self.mafia_main.user.wins_as_mafia + 1
+                return self.mafia_main.auth.user.wins_as_mafia + 1
             elif MAX_WINS_MODE == "civilian" and self.mafia_main:
-                return self.mafia_main.user.wins_as_peaceful + 1
+                return self.mafia_main.auth.user.wins_as_peaceful + 1
         return None
 
     @staticmethod
@@ -271,7 +310,7 @@ class Farm:
     async def check_total_games_limit(self):
         """Проверяет, не превышено ли общее количество игр."""
         if MAX_GAMES and self.mafia_main:
-            games = self.mafia_main.user.played_games
+            games = self.mafia_main.auth.user.played_games
             message = "Количество игр достигло лимита, завершаем."
             await self.check_games_limit(games, MAX_GAMES, message)
 
@@ -279,12 +318,13 @@ class Farm:
         """Проверяет, не превышено ли количество игр у отдельных игроков."""
         if MAX_ACCOUNTS_GAMES:
             for player in self.players:
-                games = player.client.user.played_games
-                message = (f"Количество игр у {player.client.user.username} "
+                games = player.client.auth.user.played_games
+                message = (f"Количество игр у {player.client.auth.user.username} "
                            f"достигло лимита, завершаем.")
                 await self.check_games_limit(games, MAX_ACCOUNTS_GAMES, 
                                              message)
 
+    # AntiBanProtection
     async def handle_cautiously(self, callbacks):
         """Обработка ситуации, если был 'шухер'."""
         actions = [
@@ -310,6 +350,7 @@ class Farm:
         await self.remove_accounts_from_server(False)
         return True
 
+    # Playing
     async def create_and_prepare_room(self, callbacks):
         """Создаёт комнату и добавляет в неё игроков."""
         try:
@@ -331,7 +372,7 @@ class Farm:
     async def room_creation_response(self, callbacks, room):
         if not self.host:
             raise AttributeError("No hosts")
-        logging.info(f"{self.host.user.username} создал-(а) комнату с "
+        logging.info(f"{self.host.auth.user.username} создал-(а) комнату с "
                      f"названием {room.title}")
         await self.join_all_players_to_room(callbacks)
 
@@ -339,6 +380,8 @@ class Farm:
         await self.recreate_room(callbacks = callbacks)
         logging.error("ошибка при создании комнаты")
 
+
+    # Data
     async def handle_data(self, data, number_of_games, room_time, cautions,
                           stoppers, day_gs, days, callbacks):
         """обрабатывает события на основе типа данных."""
@@ -370,6 +413,7 @@ class Farm:
         elif not data_type and data.get(PacketDataKeys.TIME):
             await self.handle_mafia_time(data, callbacks)
 
+    # Playing
     def should_process_players_stat(self, data_type):
         return data_type == PacketDataKeys.PLAYERS_STAT and self.players[
             0].role == -1
@@ -394,6 +438,7 @@ class Farm:
             # await self.check_accounts_for_active(callbacks)
             self.time_checker(mafia_time)
 
+    # AntiBanProtection
     async def cautiously_on_time(self, callbacks, mafia_time):
         likely_bug_time = {1, 33, 34}
         if self.cautiously_should_proceed(mafia_time, likely_bug_time):
@@ -415,25 +460,27 @@ class Farm:
             if cautiously != cautions[-1]:
                 await asyncio.sleep(.25)
 
+    # Playing or Data
     async def get_type_day(self, data, days, callbacks) -> None:
         """Обрабатывает тип дня и выполняет соответствующие действия."""
         if data.get(PacketDataKeys.DAYTIME) != 2:
-            return  # Если не дневное время, выходим
+            return None
 
         await self.give_up_action()
         if self.give_up_flag:
-            return
+            return None
 
         self.action_time_flag = False
         logging.info("Дневной чат")
         days += 1
 
         await self.check_days(days, callbacks)
+        return None
 
     """async def check_accounts_for_active(self, callbacks):
         for index, player in enumerate(self.conn_players):
             try:
-                await player.client.send_message_room(
+                await player.client.room.send_message_room(
                     " ", self.room_id)
             except Exception as e:
                 await self.disconnected_account_response(callbacks, e, index,
@@ -459,6 +506,7 @@ class Farm:
         logging.debug(f"size disabled accounts{size_disabled_accounts}")
         return size_disabled_accounts"""
 
+    # Playing or Data
     @staticmethod
     def time_checker(mafia_time):
         logging.info(f">> [⌚] {mafia_time}")
@@ -532,6 +580,8 @@ class Farm:
             if player.client.user_id != self.mafia_main.user_id:
                 await player.client.create_connection()"""
 
+
+    # Preparing
     async def prepare_players(self, callbacks):
         """
         Создаёт игроков из аккаунтов, перемешивает их (если включено в
@@ -543,7 +593,7 @@ class Farm:
         await self.create_main_player()
         if not self.mafia_main:
             raise AttributeError("No main account")
-        self.server = self.mafia_main.user.selected_language
+        self.server = self.mafia_main.auth.user.selected_language
 
         if await self.handle_cautiously(callbacks):
             return "cautiously"
@@ -572,8 +622,8 @@ class Farm:
             for account in self.accounts
         ]
         for player in self.players:
-            if player.client.user.selected_language != self.server:
-                await player.client.select_language(self.server)
+            if player.client.auth.user.selected_language != self.server:
+                await player.client.user.select_language(self.server)
 
     def shuffle_players(self):
         """Перемешивает список игроков, если включено в конфиге."""
@@ -592,6 +642,8 @@ class Farm:
             else:
                 logging.warning(f"Некорректный формат аккаунта: {account}")
 
+
+    # Playing
     @property
     def is_killing_mafia(self) -> bool:
         """
@@ -809,7 +861,7 @@ class Farm:
         client = Client()
         while True:
             try:
-                response = await client.sign_in(email, password)
+                response = await client.auth.sign_in(email, password)
             except Exception as e:
                 await Farm.create_client_error(client, e)
                 continue
@@ -821,7 +873,7 @@ class Farm:
 
     @staticmethod
     async def no_response_error(client):
-        await client.disconnect()
+        await client.auth.disconnect()
         await asyncio.sleep(0.5)
         logging.error("no response")
 
@@ -829,7 +881,7 @@ class Farm:
     async def create_client_error(client, e):
         logging.error(f"создание клиента невозможно,"
                       f" удаляем клиент {e}")
-        await client.disconnect()
+        await client.auth.disconnect()
         await asyncio.sleep(2)
 
     async def remove_accounts_from_server(self, game_finished: bool = False):
@@ -853,7 +905,7 @@ class Farm:
     @staticmethod
     async def connected_players_disconnect(players):
         for player in players:
-            await player.client.disconnect()
+            await player.client.auth.disconnect()
 
     async def players_disconnect(self, players):
         if players:
@@ -864,17 +916,17 @@ class Farm:
     async def main_account_disconnect(self):
         await asyncio.sleep(.05)
         if self.mafia_main:
-            await self.mafia_main.disconnect()
+            await self.mafia_main.auth.disconnect()
 
     @staticmethod
     async def player_disconnect(players):
         for player in players:
             await asyncio.sleep(.05)
-            await player.client.disconnect()
+            await player.client.auth.disconnect()
 
     async def in_room_disconnect(self, players):
         for player in players:
-            await player.client.remove_player(self.room_id)
+            await player.client.room.remove_player(self.room_id)
         await self.player_disconnect(players)
 
     async def recreate_room(self, game_finished:bool = False,
@@ -914,6 +966,7 @@ class Farm:
         logging.info("Пересоздаем.")
         self.count -= 1
 
+    # Hosting
     @staticmethod
     async def too_many_unavailable_hosts(authority_threshold,
                                          players_threshold, unavailable_count):
@@ -936,7 +989,7 @@ class Farm:
 
     async def get_authority_players(self):
         return [player for player in self.players if
-                player.client.user.played_games >= 40]
+                player.client.auth.user.played_games >= 40]
 
     @staticmethod
     async def selected_host_action():
@@ -944,6 +997,7 @@ class Farm:
                      "комнаты ведь ее создает только 1 игрок")
         await asyncio.sleep(10.5)
 
+    # Playing
     @property
     def conn_players(self) -> List[Player]:
         return list(filter(lambda x: not x.disconn and x.alive, self.players))
@@ -971,6 +1025,7 @@ class Farm:
             listeners = self.get_player_team(CIVILIANS)
         return listeners"""
 
+    # Hosting
     async def get_host(self) -> Optional[Client]:
         if not HOST:
             authority_players = await self.get_authority_players()
@@ -1003,8 +1058,9 @@ class Farm:
 
     async def get_valid_hosts(self, players):
         return [player for player in players if
-                player.client.user.username not in self.unavailable_hosts]
+                player.client.auth.user.username not in self.unavailable_hosts]
 
+    # Playing
     async def disconnect_disabled_roles(self, role, account, index):
         if role in DISABLED_ROLES:
             if not self.is_listener(account):
@@ -1015,9 +1071,9 @@ class Farm:
                 await elegant_remove
 
     async def elegant_remove_player(self, account):
-        await account.client.remove_player(self.room_id)
+        await account.client.room.remove_player(self.room_id)
         await asyncio.sleep(.1)
-        await account.client.disconnect()
+        await account.client.auth.disconnect()
 
     async def check_game_type(self, data, callbacks):
         game_type = data[PacketDataKeys.GAME_STATUS][PacketDataKeys.STATUS]
@@ -1059,6 +1115,7 @@ class Farm:
         callbacks.get("add_game", lambda: None)()
         return
 
+    # AntiBanProtection
     async def cautiously(self, user_id, callbacks) -> Optional[
         bool]:
         listener = self.mafia_main
@@ -1078,7 +1135,7 @@ class Farm:
                 return None
         except Exception as e:
             logging.error(f"не получен профиль "
-                          f"{listener.user.username} ", e)
+                          f"{listener.auth.user.username} ", e)
             await self.stop_farm_action(callbacks)
             return None
         if profile[PacketDataKeys.IS_ONLINE] == True:
@@ -1099,7 +1156,7 @@ class Farm:
         if not self.mafia_main:
             raise AttributeError("No main account")
         if cautiously_wowa:
-            user_language = self.mafia_main.user.selected_language.value
+            user_language = self.mafia_main.auth.user.selected_language.value
             if cautiously_wowa != user_language:
                 logging.warning(f"! Шухер (wowa), но не на {user_language} "
                              f"сервере,"
@@ -1120,7 +1177,7 @@ class Farm:
         if not self.mafia_main:
             raise AttributeError("No main account")
         if cautiously_gercog:
-            user_language = self.mafia_main.user.selected_language.value
+            user_language = self.mafia_main.auth.user.selected_language.value
             if cautiously_gercog != user_language and warn:
                 logging.warning(f"! Шухер (gercog), но не на {user_language} "
                              f"сервере,"
@@ -1151,6 +1208,7 @@ class Farm:
             if not self.cautiously_flag:
                 self.cautiously_flag = True"""
 
+    # Playing
     async def create_the_room(self, callbacks):
         while True:
             TITLE, selected_roles = self.get_room_settings()
@@ -1169,12 +1227,12 @@ class Farm:
             try:
                 if not self.mafia_main:
                     raise AttributeError("No main account")
-                if VIP_ENABLED and not self.mafia_main.user.is_vip:
+                if VIP_ENABLED and not self.mafia_main.auth.user.is_vip:
                     logging.info("у игрока нет випа")
                     sys.exit()
-                self.unavailable_hosts.append(self.host.user.username)
+                self.unavailable_hosts.append(self.host.auth.user.username)
                 min_players = await self.get_min_players()
-                room = await self.host.create_room(
+                room = await self.host.room.create_room(
                     selected_roles = selected_roles, title = TITLE,
                     min_players = min_players,
                     max_players= MAX_PLAYERS,
@@ -1334,7 +1392,7 @@ class Farm:
 
     async def host_join(self, account, callbacks):
         try:
-            await account.create_player(self.room_id)  # host can join
+            await account.room.create_player(self.room_id)  # host can join
         # without join_room
         except Exception as e:
             logging.error("ошибка при входе хоста", e)
@@ -1344,9 +1402,9 @@ class Farm:
 
     async def player_join(self, account, callbacks):
         try:
-            await account.join_room(self.room_id, self.room_password)
+            await account.room.join_room(self.room_id, self.room_password)
             await asyncio.sleep(.25)
-            await account.create_player(self.room_id)
+            await account.room.create_player(self.room_id)
 
         except SystemExit:
             await self.remove_accounts_from_server()
@@ -1354,7 +1412,7 @@ class Farm:
 
         except Exception as e:
             logging.error(f"ошибка при входе игрока "
-                          f"{account.client.user.username}, %s", e)
+                          f"{account.client.auth.user.username}, %s", e)
             await self.stop_farm_action(callbacks)
             raise
         return
@@ -1369,7 +1427,7 @@ class Farm:
 
             if not self.mafia_main:
                 raise AttributeError("No main account")
-            if account.client.user_id == self.mafia_main.user_id:
+            if account.client.auth.user_id == self.mafia_main.auth.user.user_id:
                 if await self.main_account_role_actions(role, account,
                                                         index, callbacks):
                     return
@@ -1383,6 +1441,8 @@ class Farm:
     async def role_account_actions(self, callbacks):
         players = [self.find_by_username(account)[0] for account in
                    ROLE_ACCOUNTS]
+        if players > self.players:
+            raise AttributeError("аккаунтов в role_accounts больше чем игроков, скрипт не может работать")
         if not any(player.role in ROLES_FOR_ROLE_ACCOUNTS for
                    player in players):
             logging.info(f"у игроков нет подходящих роли")
@@ -1398,7 +1458,7 @@ class Farm:
     async def search_role(player: Player) -> int:
         """Ищет роль игрока и возвращает её, иначе -1 при ошибке."""
         try:
-            data = await player.client.get_data(PacketDataKeys.ROLES)
+            data = await player.client.auth.get_data(PacketDataKeys.ROLES)
             return data.get(PacketDataKeys.ROLES, [{}])[0].get(
                 PacketDataKeys.ROLE, -1)
         except Exception as e:
@@ -1418,7 +1478,7 @@ class Farm:
 
         if not self.mafia_main or not self.listener_account:
             raise AttributeError("No main or listener account")
-        if self.mafia_main.user_id != self.listener_account.user_id:
+        if self.mafia_main.user_id != self.listener_account.auth.user_id:
             await self.disconnect_disabled_roles(role, account, index)
         await self.log_main_account_role()
         return None
@@ -1480,8 +1540,8 @@ class Farm:
     def get_all_wins(self):
         if not self.mafia_main:
             raise AttributeError("No main account")
-        return (self.mafia_main.user.wins_as_mafia +
-                self.mafia_main.user.wins_as_peaceful + 1)
+        return (self.mafia_main.auth.user.wins_as_mafia +
+                self.mafia_main.auth.user.wins_as_peaceful + 1)
 
     @staticmethod
     def get_time_info():
@@ -1495,7 +1555,7 @@ class Farm:
             raise AttributeError("No main account")
         games_per_hour = ((number_of_games / work_time) * 60) * 60
         games_per_day = int(games_per_hour * 24)
-        all_games = (self.mafia_main.user.played_games + 1)
+        all_games = (self.mafia_main.auth.user.played_games + 1)
         return all_games, games_per_day, games_per_hour
 
     def format_game_results(self, number_of_games, room_time, cautions, data,
@@ -1558,8 +1618,8 @@ class Farm:
                 target_list = loving_list
 
             loved = random.choice(target_list)
-            await lover[0].client.role_action(
-                loved.client.user_id, self.room_id)
+            await lover[0].client.room.role_action(
+                loved.client.auth.user_id, self.room_id)
             loved.affected_by_roles.append(Roles.LOVER)
             logging.info(f"любовница на "
                           f"{loved.get_nickname()}")
@@ -1572,17 +1632,17 @@ class Farm:
     async def disconnect_player_in_room(self, player):
         if player.disconn and CONNECT_DISABLED_ROLES and not self.is_listener(
                 player):
-            await player.client.remove_player(self.room_id)
+            await player.client.room.remove_player(self.room_id)
             await asyncio.sleep(.01)
-            await player.client.disconnect()
+            await player.client.auth.disconnect()
 
     async def create_player_in_room(self, player):
         if player.disconn and CONNECT_DISABLED_ROLES:
-            await player.client.create_connection()
+            await player.client.room.create_connection()
             await asyncio.sleep(.1)
-            await player.client.join_room(self.room_id)
+            await player.client.room.join_room(self.room_id)
             await asyncio.sleep(.3)
-            await player.client.create_player(self.room_id)
+            await player.client.room.create_player(self.room_id)
 
     async def sheriff_action(self):
         try:
@@ -1600,8 +1660,8 @@ class Farm:
             if player:
                 player.affected_by_roles.append(Roles.SHERIFF)
 
-                await (sheriff.client.role_action
-                       (checked.client.user_id, self.room_id))
+                await (sheriff.client.room.role_action
+                       (checked.client.auth.user.user_id, self.room_id))
                 if sheriff:
                     await self.disconnect_player_in_room(sheriff)
                 logging.info(f"Шериф проверил игрока "
@@ -1628,8 +1688,8 @@ class Farm:
                                player.email == checked_player.email), None)
                 if player:
                     player.affected_by_roles.append(Roles.JOURNALIST)
-                await journalist.client.role_action(checked_player.client.
-                                                    user_id, self.room_id)
+                await journalist.client.room.role_action(checked_player.
+                                                         client.auth.user.user_id, self.room_id)
             logging.info(
                 f"Журналист проверил: "
                 f"{', '.join(p.get_nickname() for p in checking_list)}")
@@ -1648,10 +1708,10 @@ class Farm:
                 target_id = (
                     random.choice(self.get_player_team(CIVILIANS)).client.
                     user_id
-                    if mafia.client.user_id == killed.client.user_id
-                    else killed.client.user_id)
+                    if mafia.client.auth.user.user_id == killed.client.auth.user.user_id
+                    else killed.client.user.user_id)
 
-                await mafia.client.role_action(target_id, self.room_id)
+                await mafia.client.room.role_action(target_id, self.room_id)
         except Exception as e:
             logging.error(f"Ошибка при убийстве?????? {e}"
                           f"\n{traceback.format_exc()}")
@@ -1669,8 +1729,8 @@ class Farm:
             for doctor in doctors:
                 await self.create_player_in_room(doctor)
                 checked = random.choice(health_list)
-                await (doctor.client.role_action
-                       (checked.client.user_id, self.room_id))
+                await (doctor.client.room.role_action
+                       (checked.client.auth.user.user_id, self.room_id))
                 await self.disconnect_player_in_room(doctor)
                 logging.info(f"Вылечил "
                              f"{checked.get_nickname()}")
@@ -1687,10 +1747,10 @@ class Farm:
             return  # Если нет игрока для сдачи, просто выходим
 
         await self.create_player_in_room(surrendered)
-        await surrendered.client.give_up(self.room_id)
+        await surrendered.client.room.give_up(self.room_id)
 
         self.give_up_flag = True
-        logging.info(f"{surrendered.client.user.username} сдался-(ась)")
+        logging.info(f"{surrendered.client.auth.user.username} сдался-(ась)")
         await self.disconnect_player_in_room(surrendered)
         self.give_up_start_flag = False
 
@@ -1712,7 +1772,7 @@ class Farm:
         """Ищет живых игроков по имени пользователя."""
         return [
             player for player in self.players
-            if player.client.user.username == username and player.alive
+            if player.client.auth.user.username == username and player.alive
         ]
 
     async def terrorist_action_info(self, message):
@@ -1770,7 +1830,7 @@ class Farm:
     def disable_removed_player(self, player):
         """Делает игрока неактивным в списке."""
         for ind, p in enumerate(self.players):
-            if p.client.user_id == player.client.user_id:
+            if p.client.auth.user.user_id == player.client.auth.user.user_id:
                 self.players[ind].alive = False
 
     async def disconnect_from_server(self, player):
@@ -1786,14 +1846,14 @@ class Farm:
     async def disconnect_removed_player(self, player):
         """Удаляет игрока, если он не является слушателем."""
         if not self.is_listener(player) and not player.disconn:
-            await player.client.remove_player(self.room_id)
+            await player.client.room.remove_player(self.room_id)
 
     def is_listener(self, player):
         """Проверяет, является ли игрок слушателем."""
         if not self.listener_account:
             raise AttributeError("No listener account")
-        return (player.client.user.username ==
-                self.listener_account.user.username)
+        return (player.client.auth.user.username ==
+                self.listener_account.auth.user.username)
 
     def vote_info(self, message):
         """Записывает в лог информацию о голосовании: кто кого ударил."""
@@ -1845,7 +1905,7 @@ class Farm:
                 target_id = self.get_vote_target(player, victim)
 
                 if self.played and player in self.conn_players:
-                    await player.client.role_action(target_id, self.room_id)
+                    await player.client.room.role_action(target_id, self.room_id)
 
                 elif (self.played and player not in self.conn_players and
                       CONNECT_DISABLED_ROLES and player.alive):
@@ -1856,15 +1916,15 @@ class Farm:
 
     async def disconnected_role_action(self, player, target_id):
         await self.create_player_in_room(player)
-        await player.client.role_action(target_id, self.room_id)
+        await player.client.room.role_action(target_id, self.room_id)
         await self.disconnect_player_in_room(player)
 
     def get_vote_target(self, player, victim):
         """Определяет, за кого проголосует игрок."""
-        if player.client.user_id == victim.client.user_id:
+        if player.client.auth.user.user_id == victim.client.auth.user.user_id:
             return random.choice(
-                self.get_who_civ_may_kill(player.role)).client.user_id
-        return victim.client.user_id
+                self.get_who_civ_may_kill(player.role)).client.auth.user.user_id
+        return victim.client.auth.user.user_id
 
     def who_may_killed(self, ignore):
         """Возвращает список игроков, которых можно убить, исключая тех,
@@ -1881,7 +1941,7 @@ class Farm:
         return [player for player in
                 (dead_players or active_disconnected or disconnected or
                 active_role_players or players)
-                if player.client.user_id not in ignore]
+                if player.client.auth.user.user_id not in ignore]
 
     async def check_for_errors_gs(self, day_gs, callbacks):
         """Проверяет количество дневных голосований и перезапускает комнату
@@ -1923,10 +1983,10 @@ class Farm:
     async def execute_terrorist_attack(self, terrorist, booms):
         """Выбирает жертву и выполняет подрыв."""
         boomed = random.choice(booms)
-        ignore = [terrorist.client.user_id, boomed.client.user_id]
+        ignore = [terrorist.client.auth.user.user_id, boomed.client.auth.user.user_id]
 
         try:
-            await terrorist.client.role_action(boomed.client.user_id, self.room_id)
+            await terrorist.client.room.role_action(boomed.client.auth.user.user_id, self.room_id)
         except Exception as e:
             terrorist.disconn = True
             logging.debug(f"Террорист отключился: {e}", exc_info=True)

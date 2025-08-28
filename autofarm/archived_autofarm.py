@@ -1,3 +1,30 @@
+# Project: autofarm
+# License: GNU Affero General Public License v3.0 only
+#
+# This file is part of the autofarm project.
+#
+# Copyright (C) 2025 unelected
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free Software
+# Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# See the LICENSE file in the root of this repository for the full license text.
+
+"""
+This module is archived and not used in the current project.
+
+It was written for an old version of the zafiaonline API.
+No updates have been made to support the latest API yet.
+"""
 import asyncio
 import random
 import secrets
@@ -97,7 +124,7 @@ class Player:
     disconn: bool = False
 
     def get_nickname(self):
-        return f"{self.client.user.username}"
+        return f"{self.client.auth.user.username}"
 
 
 class Farm:
@@ -206,7 +233,7 @@ class Farm:
 
     def find_by_username(self, username: str) -> List[Player]:
         return [player for player in self.players if
-                player.client.user.username == username and player.alive]
+                player.client.auth.user.username == username and player.alive]
 
     async def join_to_room(self, account: Client):
         await account.join_room(self.room_id, PASSWORD)
@@ -441,8 +468,8 @@ class Farm:
                     of_days = int(of_hours * 24)
                     work_time_hours = int(work_time / 3600)
                     work_time_minutes = (work_time % 3600) // 60
-                    all_wins = (self.mafia_main.user.wins_as_mafia +
-                                self.mafia_main.user.wins_as_peaceful + 1)
+                    all_wins = (self.mafia_main.auth.user.wins_as_mafia +
+                                self.mafia_main.auth.user.wins_as_peaceful + 1)
                     logging.info(
                         f"[🏆] {number_of_games} игра закончилась\n[⏳]"
                         f" {int(time.time() - room_time)} секунд\n"

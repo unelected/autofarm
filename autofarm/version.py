@@ -18,3 +18,5 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 # See the LICENSE file in the root of this repository for the full license text.
+
+__version__ = "2.0.0"
