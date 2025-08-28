@@ -1122,7 +1122,7 @@ class Farm:
         if not listener:
             raise AttributeError("No listener")
         try:
-            result = await listener.get_user(user_id)
+            result = await listener.players.get_user(user_id)
         except Exception as e:
             logging.error("не получен юзер", e)
             await self.stop_farm_action(callbacks)
