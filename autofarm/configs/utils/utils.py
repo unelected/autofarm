@@ -28,7 +28,10 @@ import random
 import sys
 import time
 import pyfiglet
+import importlib.util
 
+from importlib.machinery import ModuleSpec
+from types import ModuleType
 from typing import List, Union
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -61,6 +64,13 @@ logging.basicConfig(level = logging.INFO,
 
 ascii_banner = pyfiglet.figlet_format("autofarm", font = "slant")
 print(ascii_banner)
+root = Path(__file__).resolve().parents[2]
+version_file = root / "version.py"
+spec: ModuleSpec | None = importlib.util.spec_from_file_location("version", version_file)
+if isinstance(spec, ModuleSpec) and spec.loader:
+    module: ModuleType = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    print(f"{ascii_banner}\nversion: {module.__version__}")
 
 while True:
     try:
