@@ -62,7 +62,7 @@ logging.basicConfig(level = logging.INFO,
                         format = "%(asctime)s - %(levelname)s - %(message)s",
                         datefmt = "%H:%M:%S")
 
-ascii_banner = pyfiglet.figlet_format("autofarm", font = "slant")
+ascii_banner = pyfiglet.figlet_format("Autofarm", font = "slant")
 print(ascii_banner)
 root = Path(__file__).resolve().parents[2]
 version_file = root / "version.py"
