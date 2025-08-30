@@ -1478,7 +1478,7 @@ class Farm:
 
         if not self.mafia_main or not self.listener_account:
             raise AttributeError("No main or listener account")
-        if self.mafia_main.user_id != self.listener_account.auth.user_id:
+        if self.mafia_main.auth.user.user_id != self.listener_account.auth.user_id:
             await self.disconnect_disabled_roles(role, account, index)
         await self.log_main_account_role()
         return None
@@ -1709,7 +1709,7 @@ class Farm:
                     random.choice(self.get_player_team(CIVILIANS)).client.
                     user_id
                     if mafia.client.auth.user.user_id == killed.client.auth.user.user_id
-                    else killed.client.user.user_id)
+                    else killed.client.auth.user.user_id)
 
                 await mafia.client.room.role_action(target_id, self.room_id)
         except Exception as e:
