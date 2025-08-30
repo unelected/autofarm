@@ -63,7 +63,6 @@ logging.basicConfig(level = logging.INFO,
                         datefmt = "%H:%M:%S")
 
 ascii_banner = pyfiglet.figlet_format("Autofarm", font = "slant")
-print(ascii_banner)
 root = Path(__file__).resolve().parents[2]
 version_file = root / "version.py"
 spec: ModuleSpec | None = importlib.util.spec_from_file_location("version", version_file)
