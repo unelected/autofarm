@@ -1707,7 +1707,7 @@ class Farm:
                                      self.get_player_team(MAFIAS))):
                 target_id = (
                     random.choice(self.get_player_team(CIVILIANS)).client.
-                    user_id
+                    auth.user.user_id
                     if mafia.client.auth.user.user_id == killed.client.auth.user.user_id
                     else killed.client.auth.user.user_id)
 
