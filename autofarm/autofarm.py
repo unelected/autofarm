@@ -1124,7 +1124,7 @@ class Farm:
         try:
             result = await listener.players.get_user(user_id)
         except Exception as e:
-            logging.error("не получен юзер", e)
+            logging.error(f"не получен юзер: {e}")
             await self.stop_farm_action(callbacks)
             return None
         try:
@@ -1135,7 +1135,7 @@ class Farm:
                 return None
         except Exception as e:
             logging.error(f"не получен профиль "
-                          f"{listener.auth.user.username} ", e)
+                f"{listener.auth.user.username}: {e}")
             await self.stop_farm_action(callbacks)
             return None
         if profile[PacketDataKeys.IS_ONLINE] == True:
@@ -1240,7 +1240,7 @@ class Farm:
                     self.minimal_level,
                     vip_enabled = VIP_ENABLED)
             except Exception as e:
-                logging.error("не получилось создать комнату", e)
+                logging.error(f"не получилось создать комнату {e}")
                 await self.stop_farm_action(callbacks)
                 return None
             return room
@@ -1395,7 +1395,7 @@ class Farm:
             await account.room.create_player(self.room_id)  # host can join
         # without join_room
         except Exception as e:
-            logging.error("ошибка при входе хоста", e)
+            logging.error(f"ошибка при входе хоста {e}")
             await self.stop_farm_action(callbacks)
             raise
         return
