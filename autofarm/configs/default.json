@@ -1,24 +1,60 @@
 
 {
+  "_comment_for_main_account":"example: (mail), (password)",
   "main": ["nickname", "password"],
+
+
+  "_comment_for_farm_sttings_section":"",
   "host": "nickname",
-  "max_players":9,
+
+  "_comment_for_mode_of_farm":"example: mode from 1 to 4",
   "mode": 1,
+
   "force": false,
+
+  "_comment_for_role_of_main_account":"1 - civilian, 2 - doctor, 3 - sheriff, 4 - mafia, 5 - lover, 6 - terrorist, 7 - journalist, 8 - bodyguard, 9 - barman, 10 - spy, 11 - informer",
   "role": [1,2,3],
+
+
+  "_comment_for_room_settings_section":"",
+
+  "_comment_for_room_max_players":"max_players from 5 to 21, recommend 8, 9, 11, 12 and 14",
+  "max_players":9,
+
   "min_level": 1,
-  "room_password": "room_password",
   "vip_enabled": false,
+
+  "_comment_for_farm_titles":"you can use string or null for (room_title)",
+  "room_title": null,
+
+  "_comment_for_room_password":"you can use null for (room_password)",
+  "room_password": "room_password",
+
+
+  "_comment_for_optional_settings_section":"",
   "shuffle_accounts": true,
   "remove_from_server_killed": true,
   "connect_disabled_roles": false,
+
+
+  "_comment_for_accounts_games_section":"(optional)",
   "max_games": 0,
   "max_accounts_games": 0,
+
+  "_comment_for_max_wins_mode":"(mafia) or (civilian) or (null)",
+  "max_wins_mode": null,
+
+  "max_wins":0,
+
+
+  "_comment_for_role_accounts_section":"(optional)",
   "role_accounts": [
     "nickname",
     "nickname"
   ],
   "roles_for_role_accounts": [11],
+
+
   "accounts": {
     "8": [
       "nickname:password",

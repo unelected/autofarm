@@ -1213,9 +1213,6 @@ class Farm:
         while True:
             TITLE, selected_roles = self.get_room_settings()
             self.room_roles = selected_roles
-            if not TITLE:
-                logging.error("ошибка в получении настроек комнаты")
-                return None
             try:
                 self.host = await self.get_host()
             except Exception as e:
@@ -1275,18 +1272,18 @@ class Farm:
         return TITLE, selected_roles
 
     def get_title(self, room_password):
-        if MODE == 2 and not VIP_ENABLED:
-            TITLE = self.not_vip_civilian_title(room_password)
+        TITLE: str | None = config.get('room_title', None)
+        if TITLE is None:
+            if MODE == 2 and not VIP_ENABLED:
+                TITLE = self.not_vip_civilian_title(room_password)
 
-        elif MODE == 2 and VIP_ENABLED:
-            TITLE = self.vip_civilian_title()
+            elif MODE == 2 and VIP_ENABLED:
+                TITLE = self.vip_civilian_title()
 
-        elif MODE == 1:
-            TITLE = self.mafia_title(room_password)
-
-        else:
-            TITLE: str = config.get('room_title',
-                                    '')
+            elif MODE == 1:
+                TITLE = self.mafia_title(room_password)
+            else:
+                TITLE = ''
         return TITLE
 
     @staticmethod
